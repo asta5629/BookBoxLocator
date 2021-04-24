@@ -1,3 +1,14 @@
 <resources>
     <string name="app_name">Book Box Locator</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="location_permission_denied" />
+    <string name="permission_required_toast" />
+    <string name="permission_rationale_location" />
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>\
+    <string name="locations_snackbar">Show Location?</string>
+    <string name="location_rational">Do you grant permission for this appliation to retreive your current location? This is needed to show your location on the map and provide several search functions. This data is not stored.</string>
+    <string name="ok">OK</string>
+    <string name="map_snackbar">Show your location on the map?</string>
+    <string name="map_rationale">We need access to your location to show your location relative to recreation opportunities near you. This data is not stored or shared.</string>
 </resources>
