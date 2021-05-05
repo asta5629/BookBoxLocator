@@ -2,38 +2,27 @@ package com.astardev.bookboxlocator
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.pm.PackageManager
+import android.app.AlertDialog
 import android.location.Location
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.provider.ContactsContract
 import android.view.View
 import android.widget.*
-import androidx.appcompat.app.AlertDialog
-import com.android.volley.Request
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import com.android.volley.RequestQueue
-import com.android.volley.Response
-import com.android.volley.toolbox.JsonObjectRequest
-import com.android.volley.toolbox.Volley
-import com.google.android.gms.common.internal.FallbackServiceBroker
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MarkerOptions
-import android.util.Log
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContentProviderCompat.requireContext
-import androidx.core.content.ContextCompat
-import androidx.fragment.app.Fragment
-import androidx.lifecycle.Transformations.map
-import com.android.volley.toolbox.StringRequest
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.model.CircleOptions
 import com.google.android.material.snackbar.Snackbar
+import okhttp3.*
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import pub.devrel.easypermissions.AfterPermissionGranted
 import pub.devrel.easypermissions.EasyPermissions
+import java.io.IOException
+import java.lang.Exception
 
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback, AdapterView.OnItemSelectedListener, ActivityCompat.OnRequestPermissionsResultCallback,
@@ -45,10 +34,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, AdapterView.OnItem
     lateinit var searchTypeInputLabel: TextView
     lateinit var searchParamEdit: EditText
     lateinit var searchButton: Button
-    lateinit var queue : RequestQueue
-    lateinit var currentLatLng: LatLng
-    private lateinit var datafetcher: DataFetcher
+    lateinit var alertBuilder: AlertDialog.Builder
 
+    private lateinit var datafetcher: DataFetcher
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -59,8 +47,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, AdapterView.OnItem
         searchTypeInputLabel = findViewById(R.id.TypeInputLabel)
         searchParamEdit = findViewById(R.id.searchParamEdit)
         searchButton = findViewById(R.id.submitBtn)
-
-        queue = Volley.newRequestQueue(this)
 
         ArrayAdapter.createFromResource(
             this,
@@ -74,10 +60,54 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, AdapterView.OnItem
 
         spinner.onItemSelectedListener = this
 
+        alertBuilder = AlertDialog.Builder(this)
+        alertBuilder.setCancelable(true)
 
         searchButton.setOnClickListener{
 
-            datafetcher.fetchBoxesOnMap()
+            if(spinner.selectedItem == "On Map"){
+                datafetcher.fetchBoxesOnMap()
+            }
+            else if(spinner.selectedItem == "Zip-Code"){
+
+                var intCheck = false
+                var zip = ""
+                try{
+                    zip = searchParamEdit.text.toString()
+                    if(zip.length == 5){
+                        intCheck = true
+                    }
+                    else{
+                        throw Exception("Not a zipcode")
+                    }
+                }
+                catch(e: Exception){
+                    alertBuilder.setMessage("You need to enter valid 5 digit zipcode.")
+                    alertBuilder.show()
+                }
+
+                if(intCheck){
+                    datafetcher.fetchBoxesByZipcode(zip)
+                }
+            }
+            else if(spinner.selectedItem == "City, State"){
+
+                var cityState = searchParamEdit.text.trim()
+
+                var city = cityState.split(",")[0].trim().toUpperCase()
+                var state = cityState.split(",")[1].trim()
+
+
+                if(city == "" || state== ""){
+                    alertBuilder.setMessage("You need to enter a valid city and state")
+                    alertBuilder.show()
+                }
+
+                datafetcher.fetchBoxesByCityState(city, state)
+            }
+            else if(spinner.selectedItem == "Nearest"){
+                datafetcher.fetchBoxesNearby(currentLocation)
+            }
 
         }
 
@@ -96,7 +126,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, AdapterView.OnItem
             map.uiSettings.isTiltGesturesEnabled = false
 
             enableMyLocation()
-            datafetcher = DataFetcher(this, googleMap)
+            datafetcher = DataFetcher(this, googleMap, alertBuilder)
         }
 
 
@@ -205,9 +235,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, AdapterView.OnItem
     }
 
     override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+        searchParamEdit.text.clear()
+
         var text: String = parent?.getItemAtPosition(position).toString()
 
-        if (text == "Nearby" || text == "On Map"){
+        if (text == "Nearest" || text == "On Map"){
             searchTypeInputLabel.isEnabled = false
             searchParamEdit.isEnabled = false
         }

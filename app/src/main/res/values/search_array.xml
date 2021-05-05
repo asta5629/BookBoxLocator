@@ -4,6 +4,6 @@
         <item>Zip-Code</item>
         <item>On Map</item>
         <item>City, State</item>
-        <item>Distance</item>
+        <item>Nearest</item>
     </string-array>
 </resources>

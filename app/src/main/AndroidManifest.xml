@@ -10,7 +10,8 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.BookBoxLocator">
+        android:theme="@style/Theme.BookBoxLocator"
+        android:usesCleartextTraffic="true">
 
         <meta-data
             android:name="com.google.android.gms.version"
